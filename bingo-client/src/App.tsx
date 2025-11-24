@@ -86,6 +86,10 @@ export default function App() {
       setChecked(nextState.checked);
       setBingoStatus(nextState.status);
 
+      if (nextState.status === "bingo") {
+        socketControlsRef.current?.stop();
+      }
+
       if (effects.triggerAnimation) {
         playAnimation();
       }
@@ -104,6 +108,10 @@ export default function App() {
 
   const handleMessage = useCallback(
     (message: SocketMessage) => {
+      if (bingoStateRef.current.status === "bingo") {
+        return;
+      }
+
       // Detect a winIndex and start the slot presentation before applying the result to the card.
       const plannedSlot = createSlotPlanFromMessage(message);
 
