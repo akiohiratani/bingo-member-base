@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const GRID_SIZE = 3;
-const MAX_NUMBER = 30;
+const MAX_NUMBER = 9;
 
 function generateBingoCard(): number[][] {
   const numbers = Array.from({ length: MAX_NUMBER }, (_, i) => i + 1);
