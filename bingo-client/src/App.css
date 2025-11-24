@@ -15,6 +15,32 @@
   color: #1d1d1f;
 }
 
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0.9;
+  animation: flash-fade 0.6s ease-out;
+}
+
+.flash-reach {
+  background: radial-gradient(circle at center, rgba(255, 235, 59, 0.85), rgba(255, 193, 7, 0.65));
+}
+
+.flash-bingo {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 64, 129, 0.8),
+    rgba(255, 193, 7, 0.8),
+    rgba(76, 175, 80, 0.85),
+    rgba(33, 150, 243, 0.85),
+    rgba(156, 39, 176, 0.85)
+  );
+  background-size: 300% 300%;
+  animation: rainbow-flash 0.9s ease-out;
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(90px, 1fr));
@@ -139,5 +165,28 @@
   .card-grid {
     grid-template-columns: repeat(3, minmax(70px, 1fr));
     gap: 0.5rem;
+  }
+}
+
+@keyframes flash-fade {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rainbow-flash {
+  0% {
+    opacity: 1;
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0% 50%;
   }
 }

@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { extractOpenableNumbers, generateBingoCard } from "./domain/bingo";
+import { generateBingoCard } from "./domain/bingo";
 import type { BingoCard, SocketMessage } from "./domain/bingo";
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
 import WelcomeModal from "./presentation/WelcomeModal";
+import {
+  progressBingo,
+  type BingoState,
+  type FlashType,
+  type BingoStatus,
+} from "./usecases/bingoProgress";
 import "./App.css";
 
 const SOCKET_URL =
@@ -11,13 +17,18 @@ const SOCKET_URL =
 
 export default function App() {
   const [card] = useState<BingoCard>(() => generateBingoCard());
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [checked, setChecked] = useState<Set<number>>(() => new Set());
   const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [animationActive, setAnimationActive] = useState(false);
+  const [flashType, setFlashType] = useState<FlashType | null>(null);
+  const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
+  const flashTimeoutRef = useRef<number | null>(null);
+  const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
   const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
+  const winAudio = useMemo(() => new Audio("/sounds/winAlert.mp3"), []);
 
   const stopAnimation = useCallback(() => {
     if (animationTimeoutRef.current) {
@@ -25,6 +36,25 @@ export default function App() {
       animationTimeoutRef.current = null;
     }
   }, []);
+
+  const stopFlash = useCallback(() => {
+    if (flashTimeoutRef.current) {
+      window.clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+  }, []);
+
+  const triggerFlash = useCallback(
+    (type: FlashType) => {
+      stopFlash();
+      setFlashType(type);
+      flashTimeoutRef.current = window.setTimeout(() => {
+        setFlashType(null);
+        flashTimeoutRef.current = null;
+      }, 500);
+    },
+    [stopFlash]
+  );
 
   const playAnimation = useCallback(() => {
     stopAnimation();
@@ -39,21 +69,31 @@ export default function App() {
 
   const handleMessage = useCallback(
     (message: SocketMessage) => {
-      const openableNumbers = extractOpenableNumbers(message, card);
+      const result = progressBingo(message, card, bingoStateRef.current);
 
-      if (openableNumbers.length === 0) {
+      if (!result) {
         return;
       }
 
-      setChecked((prev) => {
-        const next = new Set(prev);
-        openableNumbers.forEach((num) => next.add(num));
-        return next;
-      });
+      const { nextState, effects } = result;
+      bingoStateRef.current = nextState;
+      setChecked(nextState.checked);
+      setBingoStatus(nextState.status);
 
-      playAnimation();
+      if (effects.triggerAnimation) {
+        playAnimation();
+      }
+
+      if (effects.flash) {
+        triggerFlash(effects.flash);
+      }
+
+      if (effects.playWinSound) {
+        winAudio.currentTime = 0;
+        void winAudio.play();
+      }
     },
-    [card, playAnimation]
+    [card, playAnimation, triggerFlash, winAudio]
   );
 
   useEffect(() => {
@@ -61,9 +101,10 @@ export default function App() {
 
     return () => {
       stopAnimation();
+      stopFlash();
       socketControlsRef.current?.stop();
     };
-  }, [handleMessage, stopAnimation]);
+  }, [handleMessage, stopAnimation, stopFlash]);
 
   const handleCloseWelcome = () => {
     setWelcomeOpen(false);
@@ -71,8 +112,14 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" data-bingo-status={bingoStatus}>
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
+      {flashType ? (
+        <div
+          className={`flash-overlay ${flashType === "reach" ? "flash-reach" : "flash-bingo"}`}
+          aria-hidden="true"
+        />
+      ) : null}
       <h1 className="title">Bingo Card</h1>
       <div
         className={`card-grid${animationActive ? " animating" : ""}`}
