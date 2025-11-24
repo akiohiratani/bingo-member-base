@@ -54,7 +54,6 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal slot-modal">
         <h2 className="modal-title">抽選中...</h2>
-        <p className="modal-body">サーバーから届いた図柄を決定するまでお待ちください。</p>
         <div className={`slot-window${spinning ? " slot-window--active" : ""}`}>
           <div className="slot-symbol">
             {currentSymbol ? (
@@ -69,7 +68,7 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
         </div>
         {!spinning ? (
           <button className="modal-button" type="button" onClick={onConfirm}>
-            Click
+            Please Click
           </button>
         ) : null}
       </div>
