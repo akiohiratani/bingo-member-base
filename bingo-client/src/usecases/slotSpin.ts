@@ -57,7 +57,7 @@ function pickRandomSymbol(symbolCount: number, exclude: number): number {
  * The plan is consumed by the presentation layer to render a paced sequence without embedding timing logic there.
  */
 export function createSlotSpinPlan(targetSymbol: number, symbolCount = MAX_NUMBER): SlotSpinPlan {
-  const totalDuration = randomInRange(3000, 7000);
+  const totalDuration = randomInRange(3000, 3000);
   const estimatedSteps = Math.max(20, Math.floor(totalDuration / 120));
   const minDelay = 45;
   const maxDelay = 260;
