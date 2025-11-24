@@ -55,6 +55,34 @@
   object-fit: contain;
 }
 
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  animation: flashFade 650ms ease-out;
+  mix-blend-mode: screen;
+  z-index: 20;
+}
+
+.flash-overlay.reach {
+  background: radial-gradient(circle at center, rgba(255, 221, 87, 0.75), transparent 55%);
+}
+
+.flash-overlay.bingo {
+  background: conic-gradient(
+    from 45deg,
+    #ff5f6d,
+    #ffc371,
+    #f9f871,
+    #7ef29d,
+    #72e9f3,
+    #7b61ff,
+    #ff5f6d
+  );
+  filter: saturate(1.4);
+  animation: flashFade 750ms ease-out, hueShift 1.2s linear infinite;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -121,6 +149,27 @@
   100% {
     transform: scale(1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@keyframes flashFade {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hueShift {
+  from {
+    filter: saturate(1.4) hue-rotate(0deg);
+  }
+  to {
+    filter: saturate(1.4) hue-rotate(360deg);
   }
 }
 

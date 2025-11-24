@@ -14,10 +14,61 @@ export default function App() {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [animationActive, setAnimationActive] = useState(false);
+  const [flash, setFlash] = useState<"none" | "reach" | "bingo">("none");
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
+  const flashTimeoutRef = useRef<number | null>(null);
+  const statusRef = useRef({ reach: false, bingo: false });
   const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
+  const winAudio = useMemo(() => new Audio("/sounds/winAlert.mp3"), []);
+
+  const evaluateStatus = useCallback(
+    (nextChecked: Set<number>) => {
+      const lines: number[][] = [];
+
+      for (const row of card) {
+        lines.push(row);
+      }
+
+      for (let col = 0; col < card[0].length; col += 1) {
+        lines.push(card.map((row) => row[col]));
+      }
+
+      lines.push(card.map((row, index) => row[index]));
+      lines.push(card.map((row, index) => row[card.length - 1 - index]));
+
+      let hasReach = false;
+      let hasBingo = false;
+
+      for (const line of lines) {
+        const count = line.filter((num) => nextChecked.has(num)).length;
+
+        if (count === card.length) {
+          hasBingo = true;
+        } else if (count === card.length - 1) {
+          hasReach = true;
+        }
+      }
+
+      return { hasReach, hasBingo };
+    },
+    [card]
+  );
+
+  const triggerFlash = useCallback((type: "reach" | "bingo") => {
+    if (flashTimeoutRef.current) {
+      window.clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+
+    setFlash(type);
+
+    flashTimeoutRef.current = window.setTimeout(() => {
+      setFlash("none");
+      flashTimeoutRef.current = null;
+    }, 650);
+  }, []);
 
   const stopAnimation = useCallback(() => {
     if (animationTimeoutRef.current) {
@@ -45,15 +96,34 @@ export default function App() {
         return;
       }
 
+      let nextChecked: Set<number> | null = null;
+
       setChecked((prev) => {
         const next = new Set(prev);
         openableNumbers.forEach((num) => next.add(num));
+        nextChecked = next;
         return next;
       });
 
+      if (!nextChecked) {
+        return;
+      }
+
+      const { hasReach, hasBingo } = evaluateStatus(nextChecked);
+
+      if (hasBingo && !statusRef.current.bingo) {
+        statusRef.current = { reach: true, bingo: true };
+        triggerFlash("bingo");
+        winAudio.currentTime = 0;
+        void winAudio.play();
+      } else if (hasReach && !statusRef.current.reach) {
+        statusRef.current = { ...statusRef.current, reach: true };
+        triggerFlash("reach");
+      }
+
       playAnimation();
     },
-    [card, playAnimation]
+    [card, evaluateStatus, playAnimation, triggerFlash, winAudio]
   );
 
   useEffect(() => {
@@ -61,6 +131,10 @@ export default function App() {
 
     return () => {
       stopAnimation();
+      if (flashTimeoutRef.current) {
+        window.clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = null;
+      }
       socketControlsRef.current?.stop();
     };
   }, [handleMessage, stopAnimation]);
@@ -73,6 +147,9 @@ export default function App() {
   return (
     <div className="app">
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
+      {flash !== "none" && (
+        <div className={`flash-overlay ${flash}`} aria-hidden="true" />
+      )}
       <h1 className="title">Bingo Card</h1>
       <div
         className={`card-grid${animationActive ? " animating" : ""}`}
