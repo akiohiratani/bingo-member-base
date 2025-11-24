@@ -1,42 +1,70 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 1.5rem;
+  box-sizing: border-box;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.title {
+  margin: 0;
+  font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem);
+  color: #1d1d1f;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(90px, 1fr));
+  gap: 0.75rem;
+  width: min(420px, 100%);
+}
+
+.card-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border: 2px solid #2f2f38;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff, #f3f4f6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.card-cell:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-cell.checked {
+  border-color: #34c759;
+  box-shadow: 0 8px 18px rgba(52, 199, 89, 0.25);
+  background: linear-gradient(135deg, #e9f9ef, #d4f5e0);
+}
+
+.symbol {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+@media (max-width: 520px) {
+  .card-grid {
+    gap: 0.6rem;
+    width: min(360px, 100%);
   }
-  to {
-    transform: rotate(360deg);
+
+  .card-cell {
+    border-radius: 12px;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (max-width: 400px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(70px, 1fr));
+    gap: 0.5rem;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
