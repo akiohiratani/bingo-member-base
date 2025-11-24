@@ -138,9 +138,8 @@ export default function App() {
           return;
         }
 
-        // 停止直後にモーダルを閉じ、その後 1 秒待ってからビンゴ反映と効果音を実行する。
+        // 停止直後にモーダルを閉じるが、後続のビンゴ反映が終わるまでは次のメッセージを遮断する。
         setSlotOpen(false);
-        slotOpenRef.current = false;
         setSlotSymbol(null);
 
         delayRef.current = delayMs(1000);
@@ -153,6 +152,7 @@ export default function App() {
 
         applyProgressResult(pendingProgressRef.current);
         pendingProgressRef.current = null;
+        slotOpenRef.current = false;
       })();
     },
     [applyProgressResult, card]
