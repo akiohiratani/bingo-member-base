@@ -3,6 +3,7 @@ import { generateBingoCard } from "./domain/bingo";
 import type { BingoCard, SocketMessage } from "./domain/bingo";
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
+import SlotModal from "./presentation/SlotModal";
 import WelcomeModal from "./presentation/WelcomeModal";
 import {
   progressBingo,
@@ -10,6 +11,7 @@ import {
   type FlashType,
   type BingoStatus,
 } from "./usecases/bingoProgress";
+import { createSlotPlanFromMessage, type SlotSpinPlan } from "./usecases/slotSpin";
 import "./App.css";
 
 const SOCKET_URL =
@@ -22,11 +24,14 @@ export default function App() {
   const [animationActive, setAnimationActive] = useState(false);
   const [flashType, setFlashType] = useState<FlashType | null>(null);
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
+  const [slotOpen, setSlotOpen] = useState(false);
+  const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
   const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
+  const pendingMessageRef = useRef<SocketMessage | null>(null);
   const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
   const winAudio = useMemo(() => new Audio("/sounds/winAlert.mp3"), []);
 
@@ -67,8 +72,9 @@ export default function App() {
     }, 3000);
   }, [chirpAudio, stopAnimation]);
 
-  const handleMessage = useCallback(
+  const applyBingoProgress = useCallback(
     (message: SocketMessage) => {
+      // Delegate bingo status progression to the use case so the UI only orchestrates interactions.
       const result = progressBingo(message, card, bingoStateRef.current);
 
       if (!result) {
@@ -96,6 +102,23 @@ export default function App() {
     [card, playAnimation, triggerFlash, winAudio]
   );
 
+  const handleMessage = useCallback(
+    (message: SocketMessage) => {
+      // Detect a winIndex and start the slot presentation before applying the result to the card.
+      const plannedSlot = createSlotPlanFromMessage(message);
+
+      if (plannedSlot) {
+        pendingMessageRef.current = message;
+        setSlotPlan(plannedSlot);
+        setSlotOpen(true);
+        return;
+      }
+
+      applyBingoProgress(message);
+    },
+    [applyBingoProgress]
+  );
+
   useEffect(() => {
     socketControlsRef.current = createBingoSocket(SOCKET_URL, handleMessage);
 
@@ -111,9 +134,26 @@ export default function App() {
     socketControlsRef.current?.start();
   };
 
+  const handleConfirmSlotResult = () => {
+    // Apply the pending bingo update only after the user acknowledges the revealed symbol.
+    const pending = pendingMessageRef.current;
+    pendingMessageRef.current = null;
+    setSlotOpen(false);
+    setSlotPlan(null);
+
+    if (pending) {
+      applyBingoProgress(pending);
+    }
+  };
+
   return (
     <div className="app" data-bingo-status={bingoStatus}>
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
+      <SlotModal
+        open={slotOpen}
+        plan={slotPlan}
+        onConfirm={handleConfirmSlotResult}
+      />
       {flashType ? (
         <div
           className={`flash-overlay ${flashType === "reach" ? "flash-reach" : "flash-bingo"}`}
