@@ -3,13 +3,16 @@ import { generateBingoCard } from "./domain/bingo";
 import type { BingoCard, SocketMessage } from "./domain/bingo";
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
+import SlotModal from "./presentation/SlotModal";
 import WelcomeModal from "./presentation/WelcomeModal";
 import {
-  progressBingo,
+  type BingoProgressResult,
   type BingoState,
   type FlashType,
   type BingoStatus,
 } from "./usecases/bingoProgress";
+import { prepareRound } from "./usecases/prepareRound";
+import { delayMs, playSlotPlan, type CancellablePromise } from "./usecases/slotPlayback";
 import "./App.css";
 
 const SOCKET_URL =
@@ -22,11 +25,20 @@ export default function App() {
   const [animationActive, setAnimationActive] = useState(false);
   const [flashType, setFlashType] = useState<FlashType | null>(null);
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
+  const [slotOpen, setSlotOpen] = useState(false);
+  const [slotSymbol, setSlotSymbol] = useState<number | null>(null);
+  const [slotReadyToApply, setSlotReadyToApply] = useState(false);
+  const [slotApplying, setSlotApplying] = useState(false);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
   const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
+  const pendingProgressRef = useRef<BingoProgressResult | null>(null);
+  const slotOpenRef = useRef(false);
+  const slotPlaybackRef = useRef<CancellablePromise | null>(null);
+  const delayRef = useRef<CancellablePromise | null>(null);
+  const unmountedRef = useRef(false);
   const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
   const winAudio = useMemo(() => new Audio("/sounds/winAlert.mp3"), []);
 
@@ -67,10 +79,9 @@ export default function App() {
     }, 3000);
   }, [chirpAudio, stopAnimation]);
 
-  const handleMessage = useCallback(
-    (message: SocketMessage) => {
-      const result = progressBingo(message, card, bingoStateRef.current);
-
+  // スロット完了後にまとめてビンゴ状態と付随演出を反映する。
+  const applyProgressResult = useCallback(
+    (result: BingoProgressResult | null) => {
       if (!result) {
         return;
       }
@@ -93,15 +104,86 @@ export default function App() {
         void winAudio.play();
       }
     },
-    [card, playAnimation, triggerFlash, winAudio]
+    [playAnimation, triggerFlash, winAudio]
   );
+
+  // ソケットメッセージをユースケース層で分解し、スロット演出と反映タイミングを決める。
+  const handleMessage = useCallback(
+    (message: SocketMessage) => {
+      // スロット表示中は次のメッセージを無視し、演出重複を防ぐ。
+      if (slotOpenRef.current) {
+        return;
+      }
+
+      const round = prepareRound(message, card, bingoStateRef.current);
+
+      if (!round) {
+        return;
+      }
+
+      // ビンゴ反映はスロット停止後まで遅延するため、一時保管する。
+      pendingProgressRef.current = round.progress;
+
+      // プレゼンテーション層から setTimeout を排除し、ユースケース層のプレイヤーで回す。
+      slotOpenRef.current = true;
+      setSlotOpen(true);
+      setSlotSymbol(null);
+      setSlotReadyToApply(false);
+      setSlotApplying(false);
+      const playback = playSlotPlan(round.slotPlan, (symbol) => {
+        setSlotSymbol(symbol);
+      });
+      slotPlaybackRef.current = playback;
+
+      void (async () => {
+        await playback.promise;
+        slotPlaybackRef.current = null;
+
+        if (unmountedRef.current) {
+          return;
+        }
+
+        delayRef.current = delayMs(1000);
+        await delayRef.current.promise;
+        delayRef.current = null;
+
+        if (unmountedRef.current) {
+          return;
+        }
+
+        setSlotReadyToApply(true);
+      })();
+    },
+    [card]
+  );
+
+  // 停止済みの図柄をユーザー操作でビンゴカードへ反映する。待機完了後のみ実行できる。 
+  const handleApplyResult = useCallback(() => {
+    if (!slotOpenRef.current || !slotReadyToApply || slotApplying) {
+      return;
+    }
+
+    setSlotApplying(true);
+
+    applyProgressResult(pendingProgressRef.current);
+    pendingProgressRef.current = null;
+
+    setSlotOpen(false);
+    setSlotSymbol(null);
+    setSlotReadyToApply(false);
+    setSlotApplying(false);
+    slotOpenRef.current = false;
+  }, [applyProgressResult, slotApplying, slotReadyToApply]);
 
   useEffect(() => {
     socketControlsRef.current = createBingoSocket(SOCKET_URL, handleMessage);
 
     return () => {
+      unmountedRef.current = true;
       stopAnimation();
       stopFlash();
+      slotPlaybackRef.current?.cancel();
+      delayRef.current?.cancel();
       socketControlsRef.current?.stop();
     };
   }, [handleMessage, stopAnimation, stopFlash]);
@@ -114,6 +196,13 @@ export default function App() {
   return (
     <div className="app" data-bingo-status={bingoStatus}>
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
+      <SlotModal
+        open={slotOpen}
+        symbol={slotSymbol}
+        canApply={slotReadyToApply}
+        applying={slotApplying}
+        onApply={handleApplyResult}
+      />
       {flashType ? (
         <div
           className={`flash-overlay ${flashType === "reach" ? "flash-reach" : "flash-bingo"}`}
