@@ -139,6 +139,11 @@
   animation: slot-pop 300ms ease;
 }
 
+.slot-actions {
+  display: flex;
+  width: 100%;
+}
+
 .modal-button {
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
@@ -149,6 +154,13 @@
   cursor: pointer;
   transition: transform 150ms ease, box-shadow 150ms ease;
   width: 100%;
+}
+
+.modal-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+  opacity: 0.85;
+  box-shadow: none;
 }
 
 .modal-button:hover {

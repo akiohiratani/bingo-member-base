@@ -27,6 +27,8 @@ export default function App() {
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
   const [slotOpen, setSlotOpen] = useState(false);
   const [slotSymbol, setSlotSymbol] = useState<number | null>(null);
+  const [slotReadyToApply, setSlotReadyToApply] = useState(false);
+  const [slotApplying, setSlotApplying] = useState(false);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
@@ -125,6 +127,9 @@ export default function App() {
       // プレゼンテーション層から setTimeout を排除し、ユースケース層のプレイヤーで回す。
       slotOpenRef.current = true;
       setSlotOpen(true);
+      setSlotSymbol(null);
+      setSlotReadyToApply(false);
+      setSlotApplying(false);
       const playback = playSlotPlan(round.slotPlan, (symbol) => {
         setSlotSymbol(symbol);
       });
@@ -138,10 +143,6 @@ export default function App() {
           return;
         }
 
-        // 停止直後にモーダルを閉じるが、後続のビンゴ反映が終わるまでは次のメッセージを遮断する。
-        setSlotOpen(false);
-        setSlotSymbol(null);
-
         delayRef.current = delayMs(1000);
         await delayRef.current.promise;
         delayRef.current = null;
@@ -150,13 +151,29 @@ export default function App() {
           return;
         }
 
-        applyProgressResult(pendingProgressRef.current);
-        pendingProgressRef.current = null;
-        slotOpenRef.current = false;
+        setSlotReadyToApply(true);
       })();
     },
-    [applyProgressResult, card]
+    [card]
   );
+
+  // 停止済みの図柄をユーザー操作でビンゴカードへ反映する。待機完了後のみ実行できる。 
+  const handleApplyResult = useCallback(() => {
+    if (!slotOpenRef.current || !slotReadyToApply || slotApplying) {
+      return;
+    }
+
+    setSlotApplying(true);
+
+    applyProgressResult(pendingProgressRef.current);
+    pendingProgressRef.current = null;
+
+    setSlotOpen(false);
+    setSlotSymbol(null);
+    setSlotReadyToApply(false);
+    setSlotApplying(false);
+    slotOpenRef.current = false;
+  }, [applyProgressResult, slotApplying, slotReadyToApply]);
 
   useEffect(() => {
     socketControlsRef.current = createBingoSocket(SOCKET_URL, handleMessage);
@@ -179,7 +196,13 @@ export default function App() {
   return (
     <div className="app" data-bingo-status={bingoStatus}>
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
-      <SlotModal open={slotOpen} symbol={slotSymbol} />
+      <SlotModal
+        open={slotOpen}
+        symbol={slotSymbol}
+        canApply={slotReadyToApply}
+        applying={slotApplying}
+        onApply={handleApplyResult}
+      />
       {flashType ? (
         <div
           className={`flash-overlay ${flashType === "reach" ? "flash-reach" : "flash-bingo"}`}
