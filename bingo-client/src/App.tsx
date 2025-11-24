@@ -33,6 +33,7 @@ export default function App() {
   const flashTimeoutRef = useRef<number | null>(null);
   const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
   const pendingProgressRef = useRef<BingoProgressResult | null>(null);
+  const slotOpenRef = useRef(false);
   const slotPlaybackRef = useRef<CancellablePromise | null>(null);
   const delayRef = useRef<CancellablePromise | null>(null);
   const unmountedRef = useRef(false);
@@ -108,7 +109,7 @@ export default function App() {
   const handleMessage = useCallback(
     (message: SocketMessage) => {
       // スロット表示中は次のメッセージを無視し、演出重複を防ぐ。
-      if (slotOpen) {
+      if (slotOpenRef.current) {
         return;
       }
 
@@ -122,6 +123,7 @@ export default function App() {
       pendingProgressRef.current = round.progress;
 
       // プレゼンテーション層から setTimeout を排除し、ユースケース層のプレイヤーで回す。
+      slotOpenRef.current = true;
       setSlotOpen(true);
       const playback = playSlotPlan(round.slotPlan, (symbol) => {
         setSlotSymbol(symbol);
@@ -138,6 +140,7 @@ export default function App() {
 
         // 停止直後にモーダルを閉じ、その後 1 秒待ってからビンゴ反映と効果音を実行する。
         setSlotOpen(false);
+        slotOpenRef.current = false;
         setSlotSymbol(null);
 
         delayRef.current = delayMs(1000);
@@ -152,7 +155,7 @@ export default function App() {
         pendingProgressRef.current = null;
       })();
     },
-    [applyProgressResult, card, slotOpen]
+    [applyProgressResult, card]
   );
 
   useEffect(() => {
