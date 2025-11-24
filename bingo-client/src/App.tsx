@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 const GRID_SIZE = 3;
-const MAX_NUMBER = 9;
+const MAX_NUMBER = 18;
 
 function generateBingoCard(): number[][] {
   const numbers = Array.from({ length: MAX_NUMBER }, (_, i) => i + 1);
@@ -39,7 +39,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <h1 className="title">🎯 ビンゴカード</h1>
+      <h1 className="title">Bingo Card</h1>
       <div className="card-grid" role="grid" aria-label="ビンゴカード">
         {card.flat().map((num) => {
           const isChecked = checked.has(num);
