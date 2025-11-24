@@ -22,6 +22,10 @@
   width: min(420px, 100%);
 }
 
+.card-grid.animating .card-cell {
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
 .card-cell {
   display: flex;
   align-items: center;
@@ -49,6 +53,75 @@
   width: 70%;
   height: 70%;
   object-fit: contain;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+}
+
+.modal {
+  background: #ffffff;
+  padding: 1.75rem;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  max-width: 420px;
+  width: min(90vw, 420px);
+  text-align: center;
+}
+
+.modal-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.modal-body {
+  margin: 0 0 1.25rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.modal-button {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  width: 100%;
+}
+
+.modal-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.35);
+}
+
+.modal-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 10px 22px rgba(52, 199, 89, 0.35);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 }
 
 @media (max-width: 520px) {
