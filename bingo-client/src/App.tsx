@@ -1,46 +1,84 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { extractOpenableNumbers, generateBingoCard } from "./domain/bingo";
+import type { BingoCard, SocketMessage } from "./domain/bingo";
+import { createBingoSocket } from "./infrastructure/socketClient";
+import type { SocketControls } from "./infrastructure/socketClient";
+import WelcomeModal from "./presentation/WelcomeModal";
 import "./App.css";
 
-const GRID_SIZE = 3;
-const MAX_NUMBER = 18;
-
-function generateBingoCard(): number[][] {
-  const numbers = Array.from({ length: MAX_NUMBER }, (_, i) => i + 1);
-  const shuffled = numbers.sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, GRID_SIZE * GRID_SIZE);
-  const grid: number[][] = [];
-
-  for (let i = 0; i < GRID_SIZE; i++) {
-    grid.push(selected.slice(i * GRID_SIZE, (i + 1) * GRID_SIZE));
-  }
-  return grid;
-}
+const SOCKET_URL =
+  "wss://kkblt3dovh.execute-api.ap-northeast-1.amazonaws.com/AkioHiratani?role=member";
 
 export default function App() {
-  const [card] = useState<number[][]>(generateBingoCard());
+  const [card] = useState<BingoCard>(() => generateBingoCard());
   const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [welcomeOpen, setWelcomeOpen] = useState(true);
+  const [animationActive, setAnimationActive] = useState(false);
+
+  const socketControlsRef = useRef<SocketControls | null>(null);
+  const animationTimeoutRef = useRef<number | null>(null);
+  const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
+
+  const stopAnimation = useCallback(() => {
+    if (animationTimeoutRef.current) {
+      window.clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+  }, []);
+
+  const playAnimation = useCallback(() => {
+    stopAnimation();
+    setAnimationActive(true);
+    chirpAudio.currentTime = 0;
+    void chirpAudio.play();
+    animationTimeoutRef.current = window.setTimeout(() => {
+      setAnimationActive(false);
+      animationTimeoutRef.current = null;
+    }, 3000);
+  }, [chirpAudio, stopAnimation]);
+
+  const handleMessage = useCallback(
+    (message: SocketMessage) => {
+      const openableNumbers = extractOpenableNumbers(message, card);
+
+      if (openableNumbers.length === 0) {
+        return;
+      }
+
+      setChecked((prev) => {
+        const next = new Set(prev);
+        openableNumbers.forEach((num) => next.add(num));
+        return next;
+      });
+
+      playAnimation();
+    },
+    [card, playAnimation]
+  );
 
   useEffect(() => {
-    const ws = new WebSocket(
-      "wss://kkblt3dovh.execute-api.ap-northeast-1.amazonaws.com/AkioHiratani?role=member"
-    );
+    socketControlsRef.current = createBingoSocket(SOCKET_URL, handleMessage);
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("Received:", data);
-
-      if (data.type === "roundStart" && data.winIndex) {
-        setChecked((prev) => new Set(prev).add(data.winIndex));
-      }
+    return () => {
+      stopAnimation();
+      socketControlsRef.current?.stop();
     };
+  }, [handleMessage, stopAnimation]);
 
-    return () => ws.close();
-  }, []);
+  const handleCloseWelcome = () => {
+    setWelcomeOpen(false);
+    socketControlsRef.current?.start();
+  };
 
   return (
     <div className="app">
+      <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
       <h1 className="title">Bingo Card</h1>
-      <div className="card-grid" role="grid" aria-label="ビンゴカード">
+      <div
+        className={`card-grid${animationActive ? " animating" : ""}`}
+        role="grid"
+        aria-label="ビンゴカード"
+      >
         {card.flat().map((num) => {
           const isChecked = checked.has(num);
 
