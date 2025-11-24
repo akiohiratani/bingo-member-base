@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./App.css";
 
 const GRID_SIZE = 3;
 const MAX_NUMBER = 9;
@@ -16,7 +17,7 @@ function generateBingoCard(): number[][] {
 }
 
 export default function App() {
-  const [card, setCard] = useState<number[][]>(generateBingoCard());
+  const [card] = useState<number[][]>(generateBingoCard());
   const [checked, setChecked] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -29,7 +30,6 @@ export default function App() {
       console.log("Received:", data);
 
       if (data.type === "roundStart" && data.winIndex) {
-        // winIndexをカード上の数字としてチェック
         setChecked((prev) => new Set(prev).add(data.winIndex));
       }
     };
@@ -38,34 +38,28 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center", marginTop: "2rem" }}>
-      <h1>🎯 ビンゴカード</h1>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 80px)`,
-          gap: "8px",
-          justifyContent: "center",
-        }}
-      >
-        {card.flat().map((num) => (
-          <div
-            key={num}
-            style={{
-              width: "80px",
-              height: "80px",
-              lineHeight: "80px",
-              border: "2px solid #333",
-              borderRadius: "10px",
-              backgroundColor: checked.has(num) ? "#4CAF50" : "#fff",
-              color: checked.has(num) ? "#fff" : "#000",
-              fontWeight: "bold",
-              fontSize: "24px",
-            }}
-          >
-            {num}
-          </div>
-        ))}
+    <div className="app">
+      <h1 className="title">🎯 ビンゴカード</h1>
+      <div className="card-grid" role="grid" aria-label="ビンゴカード">
+        {card.flat().map((num) => {
+          const isChecked = checked.has(num);
+
+          return (
+            <div
+              key={num}
+              className={`card-cell${isChecked ? " checked" : ""}`}
+              role="gridcell"
+              aria-checked={isChecked}
+            >
+              <img
+                src={`/symbols/${num}.png`}
+                alt={`${num}のシンボル`}
+                className="symbol"
+                loading="lazy"
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
