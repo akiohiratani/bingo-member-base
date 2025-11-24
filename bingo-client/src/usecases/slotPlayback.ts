@@ -16,9 +16,19 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
   let rafId: number | null = null;
   let stopped = false;
   let resolvePromise: (() => void) | null = null;
+  let timeoutId: number | null = null;
 
   const promise = new Promise<void>((resolve) => {
-    resolvePromise = resolve;
+    const finish = () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
+      resolve();
+    };
+
+    resolvePromise = finish;
 
     // 経過時間を監視し、requestAnimationFrame でフレームを進行させることで、
     // タイマーパケットの取りこぼしによるフリーズを防ぐ。
@@ -33,7 +43,7 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
 
     const step = (timestamp: number) => {
       if (stopped) {
-        resolve();
+        finish();
         return;
       }
 
@@ -46,7 +56,7 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
       const frame = plan.frames[frameIndex];
 
       if (!frame) {
-        resolve();
+        finish();
         return;
       }
 
@@ -58,7 +68,7 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
         elapsedForFrame = 0;
 
         if (frameIndex >= plan.frames.length) {
-          resolve();
+          finish();
           return;
         }
 
@@ -69,6 +79,13 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
     };
 
     rafId = window.requestAnimationFrame(step);
+
+    // タブ非アクティブなどで requestAnimationFrame が停止した場合でも、
+    // 合計演出時間を上限として強制的に完了させ、モーダルが閉じないリスクを排除する。
+    timeoutId = window.setTimeout(() => {
+      stopped = true;
+      finish();
+    }, plan.totalDurationMs + 500);
   });
 
   const cancel = () => {
@@ -77,6 +94,11 @@ export function playSlotPlan(plan: SlotPlan, onFrame: (symbol: number) => void):
     if (rafId !== null) {
       window.cancelAnimationFrame(rafId);
       rafId = null;
+    }
+
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+      timeoutId = null;
     }
 
     resolvePromise?.();
