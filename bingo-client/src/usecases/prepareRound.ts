@@ -3,10 +3,10 @@ import { progressBingo, type BingoState, type BingoProgressResult } from "./bing
 import { createSlotPlan, type SlotPlan } from "./slotPlan";
 
 type PreparedRound = {
-  /** スロット演出を再生するための計画。表示不要な場合は null。 */
-  slotPlan: SlotPlan | null;
-  /** スロット終了後に適用すべきビンゴ進行結果。 */
-  progress: BingoProgressResult;
+  /** スロット演出を再生するための計画。 */
+  slotPlan: SlotPlan;
+  /** スロット終了後に適用すべきビンゴ進行結果。ビンゴ対象が無い場合は null。 */
+  progress: BingoProgressResult | null;
 };
 
 function extractPrimaryWinIndex(message: SocketMessage): number | null {
@@ -36,14 +36,14 @@ export function prepareRound(
   card: BingoCard,
   prevState: BingoState
 ): PreparedRound | null {
-  const progress = progressBingo(message, card, prevState);
+  const winIndex = extractPrimaryWinIndex(message);
 
-  if (!progress) {
+  if (typeof winIndex !== "number") {
     return null;
   }
 
-  const winIndex = extractPrimaryWinIndex(message);
-  const slotPlan = typeof winIndex === "number" ? createSlotPlan(winIndex, { symbolPool: card.flat() }) : null;
+  const progress = progressBingo(message, card, prevState);
+  const slotPlan = createSlotPlan(winIndex, { symbolPool: card.flat() });
 
   return {
     slotPlan,
