@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SlotSpinPlan } from "../usecases/slotSpin";
 import "../App.css";
 
@@ -14,7 +14,26 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   const timeoutRef = useRef<number | null>(null);
   const frameIndexRef = useRef(0);
   const loopTimeoutRef = useRef<number | null>(null);
+  const autoConfirmTimeoutRef = useRef<number | null>(null);
+  const confirmationSentRef = useRef(false);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const clearAutoConfirmTimeout = useCallback(() => {
+    if (autoConfirmTimeoutRef.current) {
+      window.clearTimeout(autoConfirmTimeoutRef.current);
+      autoConfirmTimeoutRef.current = null;
+    }
+  }, []);
+
+  const confirmResult = useCallback(() => {
+    if (confirmationSentRef.current) {
+      return;
+    }
+
+    confirmationSentRef.current = true;
+    clearAutoConfirmTimeout();
+    onConfirm();
+  }, [clearAutoConfirmTimeout, onConfirm]);
 
   useEffect(() => {
     const audio = new Audio("/sounds/spinStart.mp3");
@@ -23,6 +42,9 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   }, []);
 
   useEffect(() => {
+    confirmationSentRef.current = false;
+    clearAutoConfirmTimeout();
+
     if (!open || !plan) {
       return undefined;
     }
@@ -52,8 +74,10 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);
       }
+
+      clearAutoConfirmTimeout();
     };
-  }, [open, plan]);
+  }, [clearAutoConfirmTimeout, open, plan]);
 
   useEffect(() => {
     if (!spinning) {
@@ -106,6 +130,21 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
     };
   }, [spinning]);
 
+  useEffect(() => {
+    if (!open || !plan || spinning) {
+      clearAutoConfirmTimeout();
+      return undefined;
+    }
+
+    autoConfirmTimeoutRef.current = window.setTimeout(() => {
+      confirmResult();
+    }, 2500);
+
+    return () => {
+      clearAutoConfirmTimeout();
+    };
+  }, [clearAutoConfirmTimeout, confirmResult, open, plan, spinning]);
+
   if (!open || !plan) {
     return null;
   }
@@ -126,8 +165,8 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
           </div>
         </div>
         {!spinning ? (
-          <button className="modal-button" type="button" onClick={onConfirm}>
-            Please Click
+          <button className="modal-button" type="button" onClick={confirmResult}>
+            Processing...
           </button>
         ) : null}
       </div>
