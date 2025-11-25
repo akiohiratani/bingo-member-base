@@ -102,7 +102,6 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal slot-modal">
-        <h2 className="modal-title">抽選中...</h2>
         <div className={`slot-window${spinning ? " slot-window--active" : ""}`}>
           <div className="slot-symbol">
             {currentSymbol ? (
