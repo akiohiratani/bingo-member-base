@@ -10,6 +10,7 @@ import {
   type BingoState,
   type FlashType,
   type BingoStatus,
+  findReachTargets,
 } from "./usecases/bingoProgress";
 import { createSlotPlanFromMessage, type SlotSpinPlan } from "./usecases/slotSpin";
 import "./App.css";
@@ -48,6 +49,14 @@ export default function App() {
       flashTimeoutRef.current = null;
     }
   }, []);
+
+  const reachTargets = useMemo(() => {
+    if (bingoStatus !== "reach") {
+      return new Set<number>();
+    }
+
+    return findReachTargets(card, checked);
+  }, [bingoStatus, card, checked]);
 
   const triggerFlash = useCallback(
     (type: FlashType) => {
@@ -189,11 +198,12 @@ export default function App() {
       >
         {card.flat().map((num) => {
           const isChecked = checked.has(num);
+          const isReachTarget = !isChecked && reachTargets.has(num);
 
           return (
             <div
               key={num}
-              className={`card-cell${isChecked ? " checked" : ""}`}
+              className={`card-cell${isChecked ? " checked" : ""}${isReachTarget ? " reach-target" : ""}`}
               role="gridcell"
               aria-checked={isChecked}
             >

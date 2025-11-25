@@ -118,6 +118,12 @@
   background: linear-gradient(135deg, #e9f9ef, #d4f5e0);
 }
 
+.card-cell.reach-target {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25);
+  animation: reach-bounce 0.8s ease-in-out infinite;
+}
+
 .symbol {
   width: 70%;
   height: 70%;
@@ -226,6 +232,18 @@
   100% {
     transform: scale(1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@keyframes reach-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
   }
 }
 
