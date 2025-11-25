@@ -181,7 +181,7 @@ export default function App() {
           aria-hidden="true"
         />
       ) : null}
-      <h1 className="title">Bingo Card</h1>
+      <h1 className={`title${bingoStatus === "bingo" ? " rainbow" : ""}`}>Bingo Card</h1>
       <div
         className={`card-grid${animationActive ? " animating" : ""}${bingoStatus === "bingo" ? " bingo" : ""}`}
         role="grid"

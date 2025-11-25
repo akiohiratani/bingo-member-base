@@ -15,6 +15,23 @@
   color: #1d1d1f;
 }
 
+.title.rainbow {
+  background: linear-gradient(
+    120deg,
+    #ff4081,
+    #ffc107,
+    #4caf50,
+    #2196f3,
+    #9c27b0,
+    #ff4081
+  );
+  background-size: 250% 250%;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: title-rainbow 2.2s linear infinite;
+}
+
 .flash-overlay {
   position: fixed;
   inset: 0;
@@ -256,6 +273,18 @@
   }
   100% {
     opacity: 0;
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes title-rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
     background-position: 0% 50%;
   }
 }
