@@ -38,6 +38,9 @@
   pointer-events: none;
   z-index: 20;
   opacity: 0.9;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   animation: flash-fade 3s ease-out;
 }
 
@@ -56,6 +59,62 @@
   );
   background-size: 300% 300%;
   animation: rainbow-flash 3s ease-out;
+}
+
+.flash-overlay::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.4), transparent 55%);
+  mix-blend-mode: screen;
+  animation: flash-ripple 1s ease-out infinite;
+}
+
+.flash-overlay.flash-bingo::after {
+  background: radial-gradient(circle at center, rgba(255, 64, 129, 0.35), transparent 65%);
+  animation-duration: 0.8s;
+}
+
+.flash-emblem {
+  position: relative;
+  width: min(72vw, 420px);
+  aspect-ratio: 1 / 1;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.65));
+  animation: flash-pop 0.9s ease-in-out infinite, flash-strobe 0.32s steps(2, start) infinite;
+}
+
+.flash-emblem::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.28), transparent 60%);
+  animation: flash-ripple 1.1s ease-out infinite;
+  mix-blend-mode: screen;
+}
+
+.flash-emblem--reach {
+  background-image: url("/direction/reach.png");
+  filter: drop-shadow(0 0 28px rgba(255, 193, 7, 0.65))
+    drop-shadow(0 0 12px rgba(255, 193, 7, 0.55));
+}
+
+.flash-emblem--reach::before {
+  background: radial-gradient(circle at center, rgba(255, 193, 7, 0.38), transparent 62%);
+}
+
+.flash-emblem--bingo {
+  background-image: url("/direction/bingo.png");
+  filter: drop-shadow(0 0 32px rgba(255, 64, 129, 0.8))
+    drop-shadow(0 0 18px rgba(33, 150, 243, 0.7));
+  animation-duration: 0.78s, 0.28s;
+}
+
+.flash-emblem--bingo::before {
+  background: radial-gradient(circle at center, rgba(255, 64, 129, 0.32), transparent 60%);
 }
 
 .card-grid {
@@ -262,6 +321,54 @@
   .card-grid {
     grid-template-columns: repeat(3, minmax(70px, 1fr));
     gap: 0.5rem;
+  }
+}
+
+@keyframes flash-pop {
+  0% {
+    transform: scale(0.6) rotate(-10deg);
+  }
+  35% {
+    transform: scale(1.08) rotate(2deg);
+  }
+  65% {
+    transform: scale(0.96) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1.02) rotate(1deg);
+  }
+}
+
+@keyframes flash-strobe {
+  0% {
+    opacity: 1;
+  }
+  28% {
+    opacity: 0.35;
+  }
+  55% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes flash-ripple {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.6;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
   }
 }
 
