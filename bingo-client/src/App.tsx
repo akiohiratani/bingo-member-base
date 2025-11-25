@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generateBingoCard } from "./domain/bingo";
+import { extractOpenableNumbers, generateBingoCard } from "./domain/bingo";
 import type { BingoCard, SocketMessage } from "./domain/bingo";
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
@@ -33,8 +33,15 @@ export default function App() {
   const flashTimeoutRef = useRef<number | null>(null);
   const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
   const pendingMessageRef = useRef<SocketMessage | null>(null);
-  const chirpAudio = useMemo(() => new Audio("/sounds/longchirp.mp3"), []);
-  const winAudio = useMemo(() => new Audio("/sounds/winAlert.mp3"), []);
+  const chirpAudioRef = useRef<HTMLAudioElement | null>(null);
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
+  const missAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    chirpAudioRef.current = new Audio("/sounds/longchirp.mp3");
+    winAudioRef.current = new Audio("/sounds/winAlert.mp3");
+    missAudioRef.current = new Audio("/sounds/bad.mp3");
+  }, []);
 
   const stopAnimation = useCallback(() => {
     if (animationTimeoutRef.current) {
@@ -73,13 +80,15 @@ export default function App() {
   const playAnimation = useCallback(() => {
     stopAnimation();
     setAnimationActive(true);
-    chirpAudio.currentTime = 0;
-    void chirpAudio.play();
+    if (chirpAudioRef.current) {
+      chirpAudioRef.current.currentTime = 0;
+      void chirpAudioRef.current.play();
+    }
     animationTimeoutRef.current = window.setTimeout(() => {
       setAnimationActive(false);
       animationTimeoutRef.current = null;
     }, 3000);
-  }, [chirpAudio, stopAnimation]);
+  }, [stopAnimation]);
 
   const applyBingoProgress = useCallback(
     (message: SocketMessage) => {
@@ -107,12 +116,12 @@ export default function App() {
         triggerFlash(effects.flash);
       }
 
-      if (effects.playWinSound) {
-        winAudio.currentTime = 0;
-        void winAudio.play();
+      if (effects.playWinSound && winAudioRef.current) {
+        winAudioRef.current.currentTime = 0;
+        void winAudioRef.current.play();
       }
     },
-    [card, playAnimation, triggerFlash, winAudio]
+    [card, playAnimation, triggerFlash]
   );
 
   const handleMessage = useCallback(
@@ -172,6 +181,16 @@ export default function App() {
     setSlotPlan(null);
 
     if (pending) {
+      const openableNumbers = extractOpenableNumbers(pending, card);
+
+      if (openableNumbers.length === 0) {
+        if (missAudioRef.current) {
+          missAudioRef.current.currentTime = 0;
+          void missAudioRef.current.play();
+        }
+        return;
+      }
+
       applyBingoProgress(pending);
     }
   };

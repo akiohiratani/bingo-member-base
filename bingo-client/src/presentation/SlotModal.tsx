@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SlotSpinPlan } from "../usecases/slotSpin";
 import "../App.css";
 
@@ -14,10 +14,12 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   const timeoutRef = useRef<number | null>(null);
   const frameIndexRef = useRef(0);
   const loopTimeoutRef = useRef<number | null>(null);
-  const spinAudio = useMemo(() => {
+  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
     const audio = new Audio("/sounds/spinStart.mp3");
     audio.preload = "auto";
-    return audio;
+    spinAudioRef.current = audio;
   }, []);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
       return undefined;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSpinning(true);
     frameIndexRef.current = 0;
 
@@ -59,8 +62,10 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
         loopTimeoutRef.current = null;
       }
 
-      spinAudio.pause();
-      spinAudio.currentTime = 0;
+      spinAudioRef.current?.pause();
+      if (spinAudioRef.current) {
+        spinAudioRef.current.currentTime = 0;
+      }
       return undefined;
     }
 
@@ -72,14 +77,18 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
           return;
         }
 
-        spinAudio.currentTime = 0;
-        void spinAudio.play();
+        if (spinAudioRef.current) {
+          spinAudioRef.current.currentTime = 0;
+          void spinAudioRef.current.play();
+        }
       }, 1000);
     };
 
-    spinAudio.currentTime = 0;
-    void spinAudio.play();
-    spinAudio.addEventListener("ended", handleEnded);
+    if (spinAudioRef.current) {
+      spinAudioRef.current.currentTime = 0;
+      void spinAudioRef.current.play();
+      spinAudioRef.current.addEventListener("ended", handleEnded);
+    }
 
     return () => {
       cancelled = true;
@@ -89,11 +98,13 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
         loopTimeoutRef.current = null;
       }
 
-      spinAudio.removeEventListener("ended", handleEnded);
-      spinAudio.pause();
-      spinAudio.currentTime = 0;
+      spinAudioRef.current?.removeEventListener("ended", handleEnded);
+      spinAudioRef.current?.pause();
+      if (spinAudioRef.current) {
+        spinAudioRef.current.currentTime = 0;
+      }
     };
-  }, [spinAudio, spinning]);
+  }, [spinning]);
 
   if (!open || !plan) {
     return null;
