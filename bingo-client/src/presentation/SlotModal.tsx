@@ -11,10 +11,12 @@ type SlotModalProps = {
 export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   const [currentSymbol, setCurrentSymbol] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
+  const [progress, setProgress] = useState(0);
   const timeoutRef = useRef<number | null>(null);
   const frameIndexRef = useRef(0);
   const loopTimeoutRef = useRef<number | null>(null);
   const autoConfirmTimeoutRef = useRef<number | null>(null);
+  const progressAnimationRef = useRef<number | null>(null);
   const confirmationSentRef = useRef(false);
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -31,7 +33,12 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
     }
 
     confirmationSentRef.current = true;
+    setProgress(100);
     clearAutoConfirmTimeout();
+    if (progressAnimationRef.current !== null) {
+      window.cancelAnimationFrame(progressAnimationRef.current);
+      progressAnimationRef.current = null;
+    }
     onConfirm();
   }, [clearAutoConfirmTimeout, onConfirm]);
 
@@ -43,6 +50,7 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
 
   useEffect(() => {
     confirmationSentRef.current = false;
+    setProgress(0);
     clearAutoConfirmTimeout();
 
     if (!open || !plan) {
@@ -132,6 +140,11 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
 
   useEffect(() => {
     if (!open || !plan || spinning) {
+      setProgress(0);
+      if (progressAnimationRef.current !== null) {
+        window.cancelAnimationFrame(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
       clearAutoConfirmTimeout();
       return undefined;
     }
@@ -140,7 +153,26 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
       confirmResult();
     }, 2500);
 
+    const durationMs = 2500;
+    const start = performance.now();
+
+    const animate = (timestamp: number) => {
+      const elapsed = timestamp - start;
+      const nextProgress = Math.min(100, (elapsed / durationMs) * 100);
+      setProgress(nextProgress);
+
+      if (nextProgress < 100 && !confirmationSentRef.current) {
+        progressAnimationRef.current = window.requestAnimationFrame(animate);
+      }
+    };
+
+    progressAnimationRef.current = window.requestAnimationFrame(animate);
+
     return () => {
+      if (progressAnimationRef.current !== null) {
+        window.cancelAnimationFrame(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
       clearAutoConfirmTimeout();
     };
   }, [clearAutoConfirmTimeout, confirmResult, open, plan, spinning]);
@@ -166,7 +198,13 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
         </div>
         {!spinning ? (
           <button className="modal-button" type="button" onClick={confirmResult}>
-            Processing...
+            <span className="modal-button__label">Processing...</span>
+            <span className="modal-button__progress" aria-hidden="true">
+              <span
+                className="modal-button__progress-bar"
+                style={{ width: `${progress}%` }}
+              />
+            </span>
           </button>
         ) : null}
       </div>
