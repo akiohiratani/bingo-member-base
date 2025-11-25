@@ -231,6 +231,33 @@
   cursor: pointer;
   transition: transform 150ms ease, box-shadow 150ms ease;
   width: 100%;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.modal-button__label {
+  font-weight: 600;
+}
+
+.modal-button__progress {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.modal-button__progress-bar {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: #ffffff;
+  opacity: 0.95;
+  transition: width 120ms linear;
 }
 
 .modal-button:hover {
