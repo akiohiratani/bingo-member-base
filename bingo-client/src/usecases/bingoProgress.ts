@@ -44,6 +44,21 @@ function collectLines(card: BingoCard): number[][] {
   return lines;
 }
 
+export function findReachTargets(card: BingoCard, checked: Set<number>): Set<number> {
+  const lines = collectLines(card);
+  const targets = new Set<number>();
+
+  for (const line of lines) {
+    const missing = line.filter((value) => !checked.has(value));
+
+    if (missing.length === 1) {
+      targets.add(missing[0]);
+    }
+  }
+
+  return targets;
+}
+
 function evaluateBingoStatus(card: BingoCard, checked: Set<number>): BingoStatus {
   const lines = collectLines(card);
   let hasReach = false;
