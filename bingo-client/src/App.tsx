@@ -137,6 +137,19 @@ export default function App() {
     };
   }, [handleMessage, stopAnimation, stopFlash]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   const handleCloseWelcome = () => {
     setWelcomeOpen(false);
     socketControlsRef.current?.start();
