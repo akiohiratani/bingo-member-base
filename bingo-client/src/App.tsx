@@ -31,7 +31,11 @@ export default function App() {
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
-  const bingoStateRef = useRef<BingoState>({ checked: new Set(), status: "none" });
+  const bingoStateRef = useRef<BingoState>({
+    checked: new Set(),
+    status: "none",
+    reachLineCount: 0,
+  });
   const pendingMessageRef = useRef<SocketMessage | null>(null);
   const chirpAudioRef = useRef<HTMLAudioElement | null>(null);
   const winAudioRef = useRef<HTMLAudioElement | null>(null);

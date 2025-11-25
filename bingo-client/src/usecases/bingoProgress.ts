@@ -6,6 +6,7 @@ export type FlashType = "reach" | "bingo";
 export type BingoState = {
   checked: Set<number>;
   status: BingoStatus;
+  reachLineCount: number;
 };
 
 export type BingoProgressResult = {
@@ -59,23 +60,34 @@ export function findReachTargets(card: BingoCard, checked: Set<number>): Set<num
   return targets;
 }
 
-function evaluateBingoStatus(card: BingoCard, checked: Set<number>): BingoStatus {
+function evaluateBingoStatus(card: BingoCard, checked: Set<number>): {
+  status: BingoStatus;
+  reachLineCount: number;
+} {
   const lines = collectLines(card);
   let hasReach = false;
+  let reachLineCount = 0;
+  let hasBingo = false;
 
   for (const line of lines) {
     const checkedCount = line.filter((value) => checked.has(value)).length;
 
     if (checkedCount === line.length) {
-      return "bingo";
+      hasBingo = true;
+      continue;
     }
 
     if (checkedCount === line.length - 1) {
       hasReach = true;
+      reachLineCount += 1;
     }
   }
 
-  return hasReach ? "reach" : "none";
+  if (hasBingo) {
+    return { status: "bingo", reachLineCount };
+  }
+
+  return { status: hasReach ? "reach" : "none", reachLineCount };
 }
 
 export function progressBingo(
@@ -92,17 +104,21 @@ export function progressBingo(
   const nextChecked = new Set(prevState.checked);
   openableNumbers.forEach((num) => nextChecked.add(num));
 
-  const nextStatus = evaluateBingoStatus(card, nextChecked);
+  const evaluation = evaluateBingoStatus(card, nextChecked);
+  const nextStatus = evaluation.status;
+  const nextReachLineCount = evaluation.reachLineCount;
   const transitionedToBingo = nextStatus === "bingo" && prevState.status !== "bingo";
-  const transitionedToReach =
-    nextStatus === "reach" && prevState.status !== "reach" && prevState.status !== "bingo";
+  const reachLinesIncreased =
+    nextStatus === "reach" &&
+    prevState.status !== "bingo" &&
+    nextReachLineCount > prevState.reachLineCount;
 
   return {
-    nextState: { checked: nextChecked, status: nextStatus },
+    nextState: { checked: nextChecked, status: nextStatus, reachLineCount: nextReachLineCount },
     effects: {
       triggerAnimation: true,
       playChirp: true,
-      flash: transitionedToBingo ? "bingo" : transitionedToReach ? "reach" : null,
+      flash: transitionedToBingo ? "bingo" : reachLinesIncreased ? "reach" : null,
       playWinSound: transitionedToBingo,
     },
   };
