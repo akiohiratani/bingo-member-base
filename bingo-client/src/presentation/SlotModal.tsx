@@ -74,7 +74,7 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
 
         spinAudio.currentTime = 0;
         void spinAudio.play();
-      }, 300);
+      }, 1000);
     };
 
     spinAudio.currentTime = 0;
