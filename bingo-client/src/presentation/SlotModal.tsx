@@ -151,9 +151,9 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
 
     autoConfirmTimeoutRef.current = window.setTimeout(() => {
       confirmResult();
-    }, 2500);
+    }, 4000);
 
-    const durationMs = 2500;
+    const durationMs = 3500;
     const start = performance.now();
 
     const animate = (timestamp: number) => {
@@ -198,7 +198,7 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
         </div>
         {!spinning ? (
           <button className="modal-button" type="button" onClick={confirmResult}>
-            <span className="modal-button__label">Processing...</span>
+            <span className="modal-button__label">Please Click</span>
             <span className="modal-button__progress" aria-hidden="true">
               <span
                 className="modal-button__progress-bar"
