@@ -56,7 +56,7 @@ export default function App() {
       flashTimeoutRef.current = window.setTimeout(() => {
         setFlashType(null);
         flashTimeoutRef.current = null;
-      }, 500);
+      }, 3000);
     },
     [stopFlash]
   );
@@ -181,9 +181,9 @@ export default function App() {
           aria-hidden="true"
         />
       ) : null}
-      <h1 className="title">Bingo Card</h1>
+      <h1 className={`title${bingoStatus === "bingo" ? " rainbow" : ""}`}>Bingo Card</h1>
       <div
-        className={`card-grid${animationActive ? " animating" : ""}`}
+        className={`card-grid${animationActive ? " animating" : ""}${bingoStatus === "bingo" ? " bingo" : ""}`}
         role="grid"
         aria-label="ビンゴカード"
       >
