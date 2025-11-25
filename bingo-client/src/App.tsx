@@ -56,7 +56,7 @@ export default function App() {
       flashTimeoutRef.current = window.setTimeout(() => {
         setFlashType(null);
         flashTimeoutRef.current = null;
-      }, 3000);
+      }, 1500);
     },
     [stopFlash]
   );
