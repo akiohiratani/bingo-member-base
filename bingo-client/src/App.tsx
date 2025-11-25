@@ -207,7 +207,13 @@ export default function App() {
         <div
           className={`flash-overlay ${flashType === "reach" ? "flash-reach" : "flash-bingo"}`}
           aria-hidden="true"
-        />
+        >
+          <div
+            className={`flash-emblem ${
+              flashType === "reach" ? "flash-emblem--reach" : "flash-emblem--bingo"
+            }`}
+          />
+        </div>
       ) : null}
       <h1 className={`title${bingoStatus === "bingo" ? " rainbow" : ""}`}>BINGO</h1>
       <div
