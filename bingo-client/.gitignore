@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # SettingFile
-#public/runtime-config.sample.json
+public/runtime-config.json
