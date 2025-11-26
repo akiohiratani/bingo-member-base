@@ -1,3 +1,3 @@
 {
-  "socketUrl": "wss://replace-with-your-websocket-endpoint"
+  "socketUrl": "wss://kkblt3dovh.execute-api.ap-northeast-1.amazonaws.com/AkioHiratani?role=member"
 }
