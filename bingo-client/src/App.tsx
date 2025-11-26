@@ -27,6 +27,7 @@ export default function App() {
   const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [startRequested, setStartRequested] = useState(false);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
@@ -205,14 +206,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!welcomeOpen && runtimeConfig) {
-      socketControlsRef.current?.start();
+    if (!runtimeConfig || !startRequested) {
+      return;
     }
-  }, [runtimeConfig, welcomeOpen]);
+
+    socketControlsRef.current?.start();
+  }, [runtimeConfig, startRequested]);
 
   const handleCloseWelcome = () => {
     setWelcomeOpen(false);
-    socketControlsRef.current?.start();
+  };
+
+  const handleConnected = () => {
+    setWelcomeOpen(false);
+    setStartRequested(true);
   };
 
   const handleConfirmSlotResult = () => {
@@ -244,7 +251,11 @@ export default function App() {
           {configError}
         </div>
       ) : null}
-      <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
+      <WelcomeModal
+        isOpen={welcomeOpen}
+        onClose={handleCloseWelcome}
+        onConnected={handleConnected}
+      />
       <SlotModal
         open={slotOpen}
         plan={slotPlan}
