@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SlotSpinPlan } from "../usecases/slotSpin";
+import { warmAudioElement } from "../usecases/audio";
 import "../App.css";
 
 type SlotModalProps = {
   open: boolean;
   plan: SlotSpinPlan | null;
+  audioUnlocked: boolean;
   onConfirm: () => void;
 };
 
-export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
+export default function SlotModal({
+  open,
+  plan,
+  audioUnlocked,
+  onConfirm,
+}: SlotModalProps) {
   const [currentSymbol, setCurrentSymbol] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -45,8 +52,17 @@ export default function SlotModal({ open, plan, onConfirm }: SlotModalProps) {
   useEffect(() => {
     const audio = new Audio("/sounds/spinStart.mp3");
     audio.preload = "auto";
+    audio.setAttribute("playsinline", "true");
     spinAudioRef.current = audio;
   }, []);
+
+  useEffect(() => {
+    if (!audioUnlocked || !spinAudioRef.current) {
+      return;
+    }
+
+    void warmAudioElement(spinAudioRef.current);
+  }, [audioUnlocked]);
 
   useEffect(() => {
     confirmationSentRef.current = false;
