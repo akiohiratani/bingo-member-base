@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { extractOpenableNumbers, generateBingoCard } from "./domain/bingo";
 import type { BingoCard, SocketMessage } from "./domain/bingo";
+import { loadRuntimeConfig, type RuntimeConfig } from "./infrastructure/runtimeConfig";
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
 import SlotModal from "./presentation/SlotModal";
@@ -15,9 +16,6 @@ import {
 import { createSlotPlanFromMessage, type SlotSpinPlan } from "./usecases/slotSpin";
 import "./App.css";
 
-const SOCKET_URL =
-  "wss://kkblt3dovh.execute-api.ap-northeast-1.amazonaws.com/AkioHiratani?role=member";
-
 export default function App() {
   const [card] = useState<BingoCard>(() => generateBingoCard());
   const [checked, setChecked] = useState<Set<number>>(() => new Set());
@@ -27,6 +25,8 @@ export default function App() {
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
   const [slotOpen, setSlotOpen] = useState(false);
   const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
@@ -45,6 +45,31 @@ export default function App() {
     chirpAudioRef.current = new Audio("/sounds/longchirp.mp3");
     winAudioRef.current = new Audio("/sounds/winAlert.mp3");
     missAudioRef.current = new Audio("/sounds/bad.mp3");
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadRuntimeConfig()
+      .then((config) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRuntimeConfig(config);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (cancelled) {
+          return;
+        }
+
+        setConfigError("設定ファイルの読み込みに失敗しました。管理者に連絡してください。");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const stopAnimation = useCallback(() => {
@@ -150,14 +175,21 @@ export default function App() {
   );
 
   useEffect(() => {
-    socketControlsRef.current = createBingoSocket(SOCKET_URL, handleMessage);
+    if (!runtimeConfig) {
+      return;
+    }
+
+    socketControlsRef.current = createBingoSocket(
+      runtimeConfig.socketUrl,
+      handleMessage
+    );
 
     return () => {
       stopAnimation();
       stopFlash();
       socketControlsRef.current?.stop();
     };
-  }, [handleMessage, stopAnimation, stopFlash]);
+  }, [handleMessage, runtimeConfig, stopAnimation, stopFlash]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -171,6 +203,12 @@ export default function App() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
+
+  useEffect(() => {
+    if (!welcomeOpen && runtimeConfig) {
+      socketControlsRef.current?.start();
+    }
+  }, [runtimeConfig, welcomeOpen]);
 
   const handleCloseWelcome = () => {
     setWelcomeOpen(false);
@@ -201,6 +239,11 @@ export default function App() {
 
   return (
     <div className="app" data-bingo-status={bingoStatus}>
+      {configError ? (
+        <div className="config-error" role="alert">
+          {configError}
+        </div>
+      ) : null}
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
       <SlotModal
         open={slotOpen}

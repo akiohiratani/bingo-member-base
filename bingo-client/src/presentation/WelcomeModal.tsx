@@ -15,7 +15,10 @@ export default function WelcomeModal({ open, onClose }: WelcomeModalProps) {
       <div className="modal">
         <h2 className="modal-title">Welcome!</h2>
         <p className="modal-body">
-          ビンゴの進行を開始する前に、準備が整ったらモーダルを閉じてください。
+          準備が完了しましたら、下の「はじめる」ボタンを押してください。
+        </p>
+        <p className="modal-body">
+          ※ゲーム中は、電源を切ったり画面を切り替えたりしないでください。
         </p>
         <button className="modal-button" type="button" onClick={onClose}>
           はじめる

@@ -7,6 +7,18 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
+## Runtime configuration
+
+Sensitive endpoints such as the WebSocket URL are loaded from `public/runtime-config.json` when the application starts instead of being embedded in the bundled code. Replace the placeholder value before hosting the built assets (for example, on S3/CloudFront):
+
+```json
+{
+  "socketUrl": "wss://your-websocket-endpoint.example.com/path"
+}
+```
+
+Because the file lives under `public/`, it will be copied to the build output and fetched at runtime by the client.
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
