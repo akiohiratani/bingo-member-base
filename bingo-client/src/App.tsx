@@ -13,6 +13,7 @@ import {
   type BingoStatus,
   findReachTargets,
 } from "./usecases/bingoProgress";
+import { warmAudioElement } from "./usecases/audio";
 import { createSlotPlanFromMessage, type SlotSpinPlan } from "./usecases/slotSpin";
 import "./App.css";
 
@@ -27,6 +28,7 @@ export default function App() {
   const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
@@ -40,12 +42,41 @@ export default function App() {
   const chirpAudioRef = useRef<HTMLAudioElement | null>(null);
   const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const missAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockingRef = useRef(false);
 
   useEffect(() => {
-    chirpAudioRef.current = new Audio("/sounds/longchirp.mp3");
-    winAudioRef.current = new Audio("/sounds/winAlert.mp3");
-    missAudioRef.current = new Audio("/sounds/bad.mp3");
+    const createAudio = (src: string) => {
+      const audio = new Audio(src);
+      audio.preload = "auto";
+      audio.setAttribute("playsinline", "true");
+      return audio;
+    };
+
+    chirpAudioRef.current = createAudio("/sounds/longchirp.mp3");
+    winAudioRef.current = createAudio("/sounds/winAlert.mp3");
+    missAudioRef.current = createAudio("/sounds/bad.mp3");
   }, []);
+
+  const unlockAudioPlayback = useCallback(async () => {
+    if (audioUnlocked || audioUnlockingRef.current) {
+      return;
+    }
+
+    audioUnlockingRef.current = true;
+
+    const audios = [
+      chirpAudioRef.current,
+      winAudioRef.current,
+      missAudioRef.current,
+    ].filter((audio): audio is HTMLAudioElement => Boolean(audio));
+
+    const warmResults = await Promise.all(
+      audios.map((audio) => warmAudioElement(audio))
+    );
+
+    audioUnlockingRef.current = false;
+    setAudioUnlocked(warmResults.some(Boolean));
+  }, [audioUnlocked]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +102,20 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const handleUserInput = () => {
+      void unlockAudioPlayback();
+    };
+
+    window.addEventListener("pointerdown", handleUserInput, { once: true });
+    window.addEventListener("keydown", handleUserInput, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handleUserInput);
+      window.removeEventListener("keydown", handleUserInput);
+    };
+  }, [unlockAudioPlayback]);
 
   const stopAnimation = useCallback(() => {
     if (animationTimeoutRef.current) {
@@ -211,6 +256,7 @@ export default function App() {
   }, [runtimeConfig, welcomeOpen]);
 
   const handleCloseWelcome = () => {
+    void unlockAudioPlayback();
     setWelcomeOpen(false);
     socketControlsRef.current?.start();
   };
@@ -248,6 +294,7 @@ export default function App() {
       <SlotModal
         open={slotOpen}
         plan={slotPlan}
+        audioUnlocked={audioUnlocked}
         onConfirm={handleConfirmSlotResult}
       />
       {flashType ? (
