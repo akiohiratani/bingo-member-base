@@ -66,6 +66,7 @@ export default function SlotModal({
 
   useEffect(() => {
     confirmationSentRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgress(0);
     clearAutoConfirmTimeout();
 
@@ -73,7 +74,6 @@ export default function SlotModal({
       return undefined;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSpinning(true);
     frameIndexRef.current = 0;
 
@@ -156,6 +156,7 @@ export default function SlotModal({
 
   useEffect(() => {
     if (!open || !plan || spinning) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProgress(0);
       if (progressAnimationRef.current !== null) {
         window.cancelAnimationFrame(progressAnimationRef.current);
@@ -198,7 +199,11 @@ export default function SlotModal({
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
+    <div
+      className="modal-backdrop modal-backdrop--top"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="modal slot-modal">
         <div className={`slot-window${spinning ? " slot-window--active" : ""}`}>
           <div className="slot-symbol">
