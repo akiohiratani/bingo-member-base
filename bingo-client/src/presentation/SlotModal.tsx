@@ -170,7 +170,7 @@ export default function SlotModal({
       confirmResult();
     }, 4000);
 
-    const durationMs = 3700;
+    const durationMs = 3500;
     const start = performance.now();
 
     const animate = (timestamp: number) => {
