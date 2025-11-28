@@ -212,6 +212,13 @@
   z-index: 10;
 }
 
+.modal-backdrop--top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem 1rem 3rem;
+}
+
 .modal {
   background: #ffffff;
   padding: 1.75rem;
@@ -292,7 +299,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  height: 160px;
+  height: 125px;
   border: 3px solid #2563eb;
   border-radius: 16px;
   background: radial-gradient(circle at 30% 30%, #e0ecff, #c3d5ff);
@@ -301,14 +308,14 @@
 }
 
 .slot-window--active {
-  animation: slot-pulse 0.9s ease-in-out infinite;
+  animation: slot-pulse 0.3s ease-in-out infinite;
 }
 
 .slot-symbol {
   display: grid;
   place-items: center;
-  width: 120px;
-  height: 120px;
+  width: 110px;
+  height: 110px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
