@@ -187,14 +187,14 @@
 
 .card-cell.checked {
   border-color: #34c759;
-  box-shadow: 0 8px 18px rgba(52, 199, 89, 0.25);
+  box-shadow: 0 8px 18px rgba(52, 199, 89, 0.8);
   background: linear-gradient(135deg, #e9f9ef, #d4f5e0);
 }
 
 .card-cell.reach-target {
   border-color: #f59e0b;
   box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25);
-  animation: reach-bounce 0.8s ease-in-out infinite;
+  animation: reach-bounce 0.5s ease-in-out infinite;
 }
 
 .symbol {
