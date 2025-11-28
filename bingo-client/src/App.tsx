@@ -17,6 +17,18 @@ import { warmAudioElement } from "./usecases/audio";
 import { createSlotPlanFromMessage, type SlotSpinPlan } from "./usecases/slotSpin";
 import "./App.css";
 
+const reachEmblemImages = [
+  "/direction/reach_1.png",
+  "/direction/reach_2.png",
+  "/direction/reach_3.png",
+];
+
+const getRandomReachEmblem = () => {
+  const randomIndex = Math.floor(Math.random() * reachEmblemImages.length);
+
+  return reachEmblemImages[randomIndex];
+};
+
 export default function App() {
   const [card] = useState<BingoCard>(() => generateBingoCard());
   const [checked, setChecked] = useState<Set<number>>(() => new Set());
@@ -26,9 +38,12 @@ export default function App() {
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
   const [slotOpen, setSlotOpen] = useState(false);
   const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
-  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-  const [configError, setConfigError] = useState<string | null>(null);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+const [configError, setConfigError] = useState<string | null>(null);
+const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [reachEmblemSrc, setReachEmblemSrc] = useState<string>(() =>
+    getRandomReachEmblem()
+  );
 
   const socketControlsRef = useRef<SocketControls | null>(null);
   const animationTimeoutRef = useRef<number | null>(null);
@@ -142,6 +157,9 @@ export default function App() {
   const triggerFlash = useCallback(
     (type: FlashType) => {
       stopFlash();
+      if (type === "reach") {
+        setReachEmblemSrc(getRandomReachEmblem());
+      }
       setFlashType(type);
       flashTimeoutRef.current = window.setTimeout(() => {
         setFlashType(null);
@@ -306,6 +324,11 @@ export default function App() {
             className={`flash-emblem ${
               flashType === "reach" ? "flash-emblem--reach" : "flash-emblem--bingo"
             }`}
+            style={
+              flashType === "reach"
+                ? { backgroundImage: `url(${reachEmblemSrc})` }
+                : undefined
+            }
           />
         </div>
       ) : null}
