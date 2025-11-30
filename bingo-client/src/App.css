@@ -242,16 +242,30 @@
   text-align: center;
 }
 
+.modal--error {
+  border: 1px solid #fca5a5;
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.18);
+}
+
 .modal-title {
   margin: 0 0 0.75rem;
   font-size: 1.5rem;
   color: #111827;
 }
 
+.modal--error .modal-title {
+  color: #b91c1c;
+}
+
 .modal-body {
   margin: 0 0 1.25rem;
   color: #374151;
   line-height: 1.6;
+}
+
+.modal-body--subtle {
+  color: #6b7280;
+  margin-top: -0.75rem;
 }
 
 .modal-button {
@@ -266,6 +280,11 @@
   width: 100%;
   display: grid;
   gap: 0.5rem;
+}
+
+.modal-button--error {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.35);
 }
 
 .modal-button__label {

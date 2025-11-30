@@ -5,6 +5,7 @@ import { loadRuntimeConfig, type RuntimeConfig } from "./infrastructure/runtimeC
 import { createBingoSocket } from "./infrastructure/socketClient";
 import type { SocketControls } from "./infrastructure/socketClient";
 import SlotModal from "./presentation/SlotModal";
+import ErrorModal from "./presentation/ErrorModal";
 import WelcomeModal from "./presentation/WelcomeModal";
 import {
   progressBingo,
@@ -38,9 +39,10 @@ export default function App() {
   const [bingoStatus, setBingoStatus] = useState<BingoStatus>("none");
   const [slotOpen, setSlotOpen] = useState(false);
   const [slotPlan, setSlotPlan] = useState<SlotSpinPlan | null>(null);
-const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
-const [configError, setConfigError] = useState<string | null>(null);
-const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
   const [reachEmblemSrc, setReachEmblemSrc] = useState<string>(() =>
     getRandomReachEmblem()
   );
@@ -237,6 +239,10 @@ const [audioUnlocked, setAudioUnlocked] = useState(false);
     [applyBingoProgress]
   );
 
+  const handleSocketError = useCallback((message: string) => {
+    setSocketError(message);
+  }, []);
+
   useEffect(() => {
     if (!runtimeConfig) {
       return;
@@ -244,7 +250,8 @@ const [audioUnlocked, setAudioUnlocked] = useState(false);
 
     socketControlsRef.current = createBingoSocket(
       runtimeConfig.socketUrl,
-      handleMessage
+      handleMessage,
+      handleSocketError
     );
 
     return () => {
@@ -252,7 +259,7 @@ const [audioUnlocked, setAudioUnlocked] = useState(false);
       stopFlash();
       socketControlsRef.current?.stop();
     };
-  }, [handleMessage, runtimeConfig, stopAnimation, stopFlash]);
+  }, [handleMessage, handleSocketError, runtimeConfig, stopAnimation, stopFlash]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -276,6 +283,12 @@ const [audioUnlocked, setAudioUnlocked] = useState(false);
   const handleCloseWelcome = () => {
     void unlockAudioPlayback();
     setWelcomeOpen(false);
+    setSocketError(null);
+    socketControlsRef.current?.start();
+  };
+
+  const handleRetryConnection = () => {
+    setSocketError(null);
     socketControlsRef.current?.start();
   };
 
@@ -314,6 +327,11 @@ const [audioUnlocked, setAudioUnlocked] = useState(false);
         plan={slotPlan}
         audioUnlocked={audioUnlocked}
         onConfirm={handleConfirmSlotResult}
+      />
+      <ErrorModal
+        open={Boolean(socketError)}
+        message={socketError ?? ""}
+        onRetry={handleRetryConnection}
       />
       {flashType ? (
         <div
